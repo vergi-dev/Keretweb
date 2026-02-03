@@ -1,65 +1,126 @@
-import Image from "next/image";
+'use client';
+
+import { useRef, useState, useEffect } from 'react';
+import VergeViewer, { VergeViewerRef } from '@/components/VergeViewer';
+import { V3DMessage } from '@/lib/verge-bridge';
+import { getLatestPosts, WPPost } from '@/lib/wordpress';
 
 export default function Home() {
+  const viewerRef = useRef<VergeViewerRef>(null);
+  const [lastMessage, setLastMessage] = useState<string>('Nincs üzenet');
+  const [posts, setPosts] = useState<WPPost[]>([]);
+
+  // WordPress adatok betöltése
+  useEffect(() => {
+    getLatestPosts().then(data => setPosts(data));
+  }, []);
+
+  const handleV3DMessage = (msg: V3DMessage) => {
+    console.log('Verge3D üzenet érkezett:', msg);
+    setLastMessage(JSON.stringify(msg));
+  };
+
+  const sendCommand = (action: string, payload?: any) => {
+    if (viewerRef.current) {
+      // @ts-expect-error - Demonstrációs célból lazán kezeljük a típusokat itt
+      viewerRef.current.sendMessage({ action, payload });
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="flex min-h-screen flex-col items-center justify-between p-8 bg-slate-950 text-white">
+      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm flex">
+        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
+          Next.js + Headless WP + Verge3D
+        </p>
+      </div>
+
+      <div className="relative flex flex-col place-items-center w-full max-w-6xl mt-12 gap-8">
+        <div className="text-center">
+          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-4">
+            Modernizált <span className="text-blue-500">3D Élmény</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+          <p className="text-slate-400 max-w-2xl mx-auto text-lg mb-4">
+            A tartalom a régi WordPress-ből jön, a megjelenítés Next.js.
+          </p>
+          
+          {/* Debug Console */}
+          <div className="bg-slate-900 border border-slate-700 p-2 rounded text-xs font-mono text-green-400 min-w-[300px]">
+            Legutóbbi üzenet: {lastMessage}
+          </div>
+        </div>
+
+        <div className="w-full aspect-video md:aspect-[21/9] relative">
+          <VergeViewer ref={viewerRef} onMessage={handleV3DMessage} />
+          
+          {/* UI Overlay Példa */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-4 bg-slate-900/80 p-4 rounded-xl backdrop-blur border border-white/10">
+            <button 
+              onClick={() => sendCommand('CHANGE_MATERIAL', { color: 'red' })}
+              className="px-4 py-2 bg-red-600 hover:bg-red-500 rounded font-bold transition"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              Piros Anyag
+            </button>
+            <button 
+              onClick={() => sendCommand('PLAY_ANIMATION', { name: 'Run' })}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded font-bold transition"
             >
-              Learning
-            </a>{" "}
-            center.
+              Animáció Start
+            </button>
+            <button 
+              onClick={() => sendCommand('CHANGE_MATERIAL', { color: 'blue' })}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded font-bold transition"
+            >
+              Kék Anyag
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* WordPress Hírek Szekció */}
+      <div className="w-full max-w-5xl mt-16">
+        <h2 className="text-2xl font-bold mb-6 border-b border-slate-800 pb-2">Hírek a WordPressből</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {posts.map(post => (
+            <div key={post.id} className="p-6 rounded-xl border border-slate-800 bg-slate-900/50 hover:bg-slate-800 transition">
+              <h3 className="text-xl font-semibold text-blue-400 mb-2">{post.title.rendered}</h3>
+              <div 
+                className="text-slate-400 text-sm prose prose-invert"
+                dangerouslySetInnerHTML={{ __html: post.content.rendered }}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-3 lg:text-left gap-4">
+        <div className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30">
+          <h2 className={`mb-3 text-2xl font-semibold text-blue-400`}>
+            Vezérlés
+          </h2>
+          <p className={`m-0 max-w-[30ch] text-sm opacity-50 text-slate-300`}>
+            Itt alakíthatjuk ki a 3D jelenetet befolyásoló UI gombokat.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30">
+          <h2 className={`mb-3 text-2xl font-semibold text-purple-400`}>
+            Adatok
+          </h2>
+          <p className={`m-0 max-w-[30ch] text-sm opacity-50 text-slate-300`}>
+            A Next.js backendről érkező infók átadása a Verge3D-nek.
+          </p>
         </div>
-      </main>
-    </div>
+
+        <div className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30">
+          <h2 className={`mb-3 text-2xl font-semibold text-green-400`}>
+            Export
+          </h2>
+          <p className={`m-0 max-w-[30ch] text-sm opacity-50 text-slate-300`}>
+            A kész konfigurációk mentése és megosztása.
+          </p>
+        </div>
+      </div>
+    </main>
   );
 }

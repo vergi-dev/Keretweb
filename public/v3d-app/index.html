@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verge3D Placeholder</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #0f172a; /* Slate-950 match */
+            color: #94a3b8; /* Slate-400 match */
+            font-family: sans-serif;
+            text-align: center;
+        }
+        .container {
+            border: 2px dashed #334155;
+            padding: 2rem;
+            border-radius: 1rem;
+        }
+        h1 { color: #60a5fa; margin-bottom: 0.5rem; }
+        p { margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Várakozás a Verge3D Appra...</h1>
+        <p>Másold a fájlokat a <code>public/v3d-app</code> mappába,<br>és frissítsd az oldalt!</p>
+    </div>
+    <script>
+        // Egyszerű válasz a React üzenetekre, hogy látszódjon a kommunikáció
+        window.addEventListener('message', (event) => {
+            console.log("Iframe kapott üzenetet:", event.data);
+            if(event.data?.action === 'CHANGE_MATERIAL') {
+                document.querySelector('h1').style.color = event.data.payload.color;
+                window.parent.postMessage({ action: 'APP_LOADED', payload: 'Placeholder válaszol' }, '*');
+            }
+        });
+    </script>
+</body>
+</html>
